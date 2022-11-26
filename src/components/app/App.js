@@ -7,38 +7,34 @@ import ErrorBoundary from "../errorBoundary/ErrorBoundary";
 
 import decoration from '../../resources/img/vision.png';
 
-class App extends Component {
-    state = {
-        selectedChar: null
-    }
+const App = () => {
 
-    onSetSelectedChar = (id) => {
-        this.setState({
-            selectedChar: id
-        })
-    }
+    const [selectedChar, setSelectedChar] = useState(null);
 
-    render() {
-        return (
-            <div className="app">
-                <AppHeader/>
-                <main>
+    const onSetSelectedChar = (id) => {
+        setSelectedChar(id);
+    }
+    
+    return (
+        <div className="app">
+            <AppHeader/>
+            <main>
+                <ErrorBoundary>
+                    <RandomChar/>   
+                </ErrorBoundary>
+                <div className="char__content">
                     <ErrorBoundary>
-                        <RandomChar/>   
+                        <CharList onSetSelectedChar={onSetSelectedChar}/>
                     </ErrorBoundary>
-                    <div className="char__content">
-                        <ErrorBoundary>
-                            <CharList onSetSelectedChar={this.onSetSelectedChar}/>
-                        </ErrorBoundary>
-                        <ErrorBoundary>
-                            <CharInfo charId={this.state.selectedChar}/>
-                        </ErrorBoundary>
-                    </div>
-                    <img className="bg-decoration" src={decoration} alt="vision"/>
-                </main>
-            </div>
-        )
-    }
+                    <ErrorBoundary>
+                        <CharInfo charId={selectedChar}/>
+                    </ErrorBoundary>
+                </div>
+                <img className="bg-decoration" src={decoration} alt="vision"/>
+            </main>
+        </div>
+    )
+
 }
 
 export default App;
