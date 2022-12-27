@@ -1,6 +1,6 @@
 import './charList.scss';
 import {Component, useState, useEffect, useRef} from 'react'
-import MarvelService from '../../services/MarvelService';
+import useMarvelService from '../../services/MarvelService';
 import Spinner from '../spinner/Spinner';
 import ErrorMessage from '../errorMessage/ErrorMessage';
 import PropTypes from 'prop-types';
@@ -8,16 +8,14 @@ import PropTypes from 'prop-types';
 const CharList = (props) => {
 
     const [chars, setChars] = useState([]);
-    const [loading, setLoading] = useState(true);
     const [newItemLoading, setNewItemLoading] = useState(false);
-    const [error, setError] = useState(false);
     const [offset, setOffset] = useState(210);
     const [charsEnded, setCharsEnded] = useState(false);
     const [selectedCharIndex, setSelectedCharIndex] = useState(null);
 
-    let charRefs = useRef([]);
+    let charRefs = [];
 
-    const marvelService = new MarvelService();
+    const {loading, error, getAllCharacters} = useMarvelService();
 
     const onCharsLoaded = (newChars) => {
         let ended = false;
@@ -26,30 +24,18 @@ const CharList = (props) => {
         }
 
         setChars(chars => [...chars, ...newChars]);
-        setLoading(false);
         setNewItemLoading(false);
         setOffset(offset => offset + 9);
         setCharsEnded(ended);
     }
 
-    const onCharsLoading = () => {
-        setNewItemLoading(true);
-        setError(false);
+    const onUpdateChars = (offset, initial=false) => {
+        initial ? setNewItemLoading(false) : setNewItemLoading(true);
+        getAllCharacters(offset)
+            .then(onCharsLoaded);
     }
 
-    const onError = () => {
-        setLoading(false);
-        setError(true);
-    }
-
-    const onUpdateChars = (offset) => {
-        onCharsLoading();
-        marvelService.getAllCharacters(offset)
-            .then(onCharsLoaded)
-            .catch(onError);
-    }
-
-    useEffect(onUpdateChars, []);
+    useEffect(() => onUpdateChars(offset, true), []);
 
     const onScrollUpdateChars = () => {
         if (offset > 210 && window.scrollY + window.innerHeight > document.body.scrollHeight) {
@@ -58,7 +44,7 @@ const CharList = (props) => {
     }
 
     const setCharRef = (elem) => {
-        charRefs.current.push(elem);
+        charRefs.push(elem); 
     }
 
     // componentWillUnmount() {
@@ -67,42 +53,49 @@ const CharList = (props) => {
 
     const onSetSelectedChar = (activeCharId, newSelectedCharIndex) => {
         if (selectedCharIndex !== null) {
-            charRefs.current[selectedCharIndex].classList.remove('char__item_selected');
+            charRefs[selectedCharIndex].classList.remove('char__item_selected');
         }
         props.onSetSelectedChar(activeCharId);
-        charRefs.current[newSelectedCharIndex].classList.add('char__item_selected');
-        charRefs.current[newSelectedCharIndex].focus();
+        charRefs[newSelectedCharIndex].classList.add('char__item_selected');
+        charRefs[newSelectedCharIndex].focus();
         setSelectedCharIndex(newSelectedCharIndex);
     }
 
-    let charsElements = chars.map((char, i) => {
-        const thumbnailStyle = {objectFit: 'cover'};
-        if (char.thumbnail === 'http://i.annihil.us/u/prod/marvel/i/mg/b/40/image_not_available.jpg') {
-            thumbnailStyle.objectFit = 'contain';
-        }
+    const renderItems = (chars) => {
+        let charsElements = chars.map((char, i) => {
+            const thumbnailStyle = {objectFit: 'cover'};
+            if (char.thumbnail === 'http://i.annihil.us/u/prod/marvel/i/mg/b/40/image_not_available.jpg') {
+                thumbnailStyle.objectFit = 'contain';
+            }
+            return (
+                <li key={char.id} className="char__item"
+                    onClick={() => onSetSelectedChar(char.id, i)}
+                    onFocus={() => onSetSelectedChar(char.id, i)}
+                    ref={setCharRef}
+                    tabIndex={0}>
+                    <img style={thumbnailStyle} src={char.thumbnail} alt={char.name}/>
+                    <div className="char__name">{char.name}</div>
+                </li>
+            )
+        });
         return (
-            <li key={char.id} className="char__item"
-                onClick={() => onSetSelectedChar(char.id, i)}
-                onFocus={() => onSetSelectedChar(char.id, i)}
-                ref={setCharRef}
-                tabIndex={0}>
-                <img style={thumbnailStyle} src={char.thumbnail} alt={char.name}/>
-                <div className="char__name">{char.name}</div>
-            </li>
+            <ul className="char__grid">
+                {charsElements}
+            </ul>
         )
-    });
+    }
 
+    // useEffect(() => console.log('render'));
+
+    const items = renderItems(chars);
     const errorMessage = error ? <ErrorMessage/> : null;
-    const spinner = loading ? <Spinner/> : null;
-    const content = (!loading && !error) ? charsElements : null;
+    const spinner = loading && !newItemLoading ? <Spinner/> : null;
 
     return (
         <div className="char__list">
             {spinner}
-            <ul className="char__grid">
-                {errorMessage}
-                {content}
-            </ul>
+            {errorMessage}
+            {items}
             <button onClick={() => onUpdateChars(offset)}
                     disabled={newItemLoading}
                     style={{'display': charsEnded ? 'none' : 'block'}}
