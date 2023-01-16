@@ -1,0 +1,6 @@
+{
+    "[scss]": {
+      "editor.defaultFormatter": "michelemelluso.code-beautifier"
+    },
+    "editor.formatOnSave": true
+  }

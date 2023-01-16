@@ -1,0 +1,19 @@
+.error {
+    font-size: 25px;
+    font-weight: 500;
+    line-height: 40px;
+
+    &_message {
+        text-align: center;
+    }
+
+    &_link {
+        display: block;
+        text-align: center;
+
+        &:hover {
+            color: blue;
+            text-decoration-line: underline;
+        }
+    }
+}
